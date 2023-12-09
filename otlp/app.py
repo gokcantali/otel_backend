@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException
-from otlp.models import TraceResponse, MetricsResponse
-from otlp.deserializers import deserialize_trace, deserialize_metrics
+from otlp.models import TraceResponse, MetricsResponse, LogsResponse
+from otlp.deserializers import deserialize_trace, deserialize_metrics, deserialize_logs
 from otlp import logger
 
 
@@ -26,6 +26,18 @@ async def receive_metrics(request: Request) -> MetricsResponse:
         metrics = deserialize_metrics(raw_data)
         logger.info(f"Received Metrics: {metrics}")
         return MetricsResponse(status="received")
+    except Exception as e:
+        logger.error(f"Error processing request: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/v1/logs", response_model=LogsResponse)
+async def receive_logs(request: Request) -> LogsResponse:
+    try:
+        raw_data = await request.body()
+        logs = deserialize_logs(raw_data)
+        logger.info(f"Received Logs: {logs}")
+        return LogsResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
