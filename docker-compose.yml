@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    volumes:
+      - ./otel-collector-config.yaml:/otel-collector-config.yaml
+    command: ["--config=/otel-collector-config.yaml"]
+    ports:
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
+    depends_on:
+      - otlp
+
+  otlp:
+    build: .
+    ports:
+      - "8000:8000"

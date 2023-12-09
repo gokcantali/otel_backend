@@ -1,0 +1,20 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  logging:
+    verbosity: detailed
+  otlphttp:
+    endpoint: "http://otlp:8000"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [logging, otlphttp]
+    traces:
+      receivers: [otlp]
+      exporters: [logging, otlphttp]
