@@ -12,7 +12,7 @@ services:
     depends_on:
       - otlp
 
-  otlp:
+  otel_backend:
     build: .
     ports:
       - "8000:8000"

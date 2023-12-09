@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
-from otlp.models import TraceResponse, MetricsResponse, LogsResponse
-from otlp.deserializers import deserialize_trace, deserialize_metrics, deserialize_logs
-from otlp import logger
+from otel_backend.models import TraceResponse, MetricsResponse, LogsResponse
+from otel_backend.deserializers import deserialize_trace, deserialize_metrics, deserialize_logs
+from otel_backend import logger
 
 
 app = FastAPI()

@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "otel-backend"
+version = "0.1.0"
+description = ""
+authors = ["Matthias Osswald <matthias@busykoala.io>"]
+readme = "README.md"
+packages = [{include = "otel_backend"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.104.1"
+uvicorn = {extras = ["standard"], version = "^0.24.0.post1"}
+opentelemetry-proto = "^1.21.0"
+
+
+[tool.poetry.group.dev.dependencies]
+flask = "^3.0.0"
+opentelemetry-sdk = "^1.21.0"
+opentelemetry-exporter-otlp = "^1.21.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

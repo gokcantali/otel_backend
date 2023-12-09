@@ -8,7 +8,7 @@ exporters:
   logging:
     verbosity: detailed
   otlphttp:
-    endpoint: "http://otlp:8000"
+    endpoint: "http://otel_backend:8000"
 
 service:
   pipelines:
