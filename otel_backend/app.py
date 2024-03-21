@@ -19,6 +19,7 @@ app = FastAPI()
 
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request) -> TraceResponse:
+    logger.info(f"Received request: {await request.body()}")
     try:
         raw_data = await request.body()
         trace = await deserialize_trace(raw_data)
