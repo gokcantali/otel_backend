@@ -12,8 +12,6 @@ async def deserialize_trace(data: bytes) -> dict:
         with GzipFile(fileobj=BytesIO(data), mode='rb') as f:
             decompressed_data = f.read()
     except IOError as e:
-        logger.error(f"Error decompressing data: {e}")
-        # assume data is not compressed
         decompressed_data = data
     try:
         trace = trace_service_pb2.ExportTraceServiceRequest()
@@ -29,8 +27,7 @@ async def deserialize_metrics(data: bytes) -> dict:
         with GzipFile(fileobj=BytesIO(data), mode='rb') as f:
             decompressed_data = f.read()
     except IOError as e:
-        logger.error(f"Error decompressing data: {e}")
-        raise
+        decompressed_data = data
     try:
         metrics = metrics_service_pb2.ExportMetricsServiceRequest()
         metrics.ParseFromString(decompressed_data)
@@ -45,8 +42,7 @@ async def deserialize_logs(data: bytes) -> dict:
         with GzipFile(fileobj=BytesIO(data), mode='rb') as f:
             decompressed_data = f.read()
     except IOError as e:
-        logger.error(f"Error decompressing data: {e}")
-        raise
+        decompressed_data = data
     try:
         logs = logs_service_pb2.ExportLogsServiceRequest()
         logs.ParseFromString(decompressed_data)
