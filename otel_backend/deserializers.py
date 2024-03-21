@@ -13,7 +13,8 @@ async def deserialize_trace(data: bytes) -> dict:
             decompressed_data = f.read()
     except IOError as e:
         logger.error(f"Error decompressing data: {e}")
-        raise
+        # assume data is not compressed
+        decompressed_data = data
     try:
         trace = trace_service_pb2.ExportTraceServiceRequest()
         trace.ParseFromString(decompressed_data)
