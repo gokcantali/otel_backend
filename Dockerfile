@@ -11,11 +11,9 @@ ENV PATH="${PATH}:/root/.local/bin"
 
 RUN poetry config virtualenvs.create false
 
-COPY pyproject.toml poetry.lock* ./
+COPY . .
 
 RUN poetry install --no-interaction --no-ansi --no-dev
-
-COPY . .
 
 RUN useradd -m appuser
 USER appuser
