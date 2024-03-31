@@ -1,26 +1,13 @@
 # otel backend
 
-This setup is a POC of an otel backend that can receive otlp
-logs, metrics and traces. The backend is a fastapi app parsing and
-logging the received payload.
-The `otel_generator.py` on the other hand is a flask app that sends
-some dummy logs, metrics and traces to the collector.
+This is a simple otel backend that can receive logs, metrics and traces.
+The traces endpoint is expecting cilium traces feeding them into
+a gnn model with convolutional layers for the edge features.
 
-```text
-otel_generator --> otel collector (docker) --> otel backend (docker)
-```
-
-## setup
+## run app
 
 ```bash
-# run the fastapi receiver and the otel pipeline
-docker-compose up -d --force-recreate --build
-docker-compose logs -f otel_backend
-
-# generate traces, logs, metrics
-poetry install
-poetry run python otel_generator.py
-curl http://127.0.0.1:5000
+poetry run uvicorn otel_backend.app:app --host 0.0.0.0 --port 8000
 ```
 
 ## nix env fix

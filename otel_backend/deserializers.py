@@ -4,6 +4,7 @@ from io import BytesIO
 from opentelemetry.proto.collector.logs.v1 import logs_service_pb2
 from opentelemetry.proto.collector.metrics.v1 import metrics_service_pb2
 from opentelemetry.proto.collector.trace.v1 import trace_service_pb2
+
 from otel_backend import logger
 
 
