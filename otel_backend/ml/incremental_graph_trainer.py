@@ -37,7 +37,7 @@ class IncrementalGraphTrainer:
     async def predict_anomaly_score(self, data):
         self.model.eval()
         with torch.no_grad():
-            out = self.model(data)
+            out = await self.model(data)
             target = torch.tensor([[0.5, 0.5]])  # This target can be adjusted
             loss = F.mse_loss(out, target, reduction='none')
             anomaly_score = loss.mean(dim=1).item()  # Average loss as anomaly score
@@ -46,7 +46,7 @@ class IncrementalGraphTrainer:
     async def update_model(self, data):
         self.model.train()
         self.optimizer.zero_grad()
-        out = self.model(data)
+        out = await self.model(data)
         target = torch.tensor([[0.5, 0.5]])  # Consistent target for training
         loss = F.mse_loss(out, target)
         loss.backward()
