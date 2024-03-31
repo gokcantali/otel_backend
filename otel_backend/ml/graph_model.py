@@ -8,6 +8,8 @@ from otel_backend.ml.net import Net
 
 GRAPH_MODEL = None
 
+count = 0
+
 
 class GraphModel:
     def __init__(self):
@@ -16,6 +18,10 @@ class GraphModel:
         self.trainer = IncrementalGraphTrainer(self.model, self.optimizer)
 
     async def train(self, new_data):
+        global count
+        if count == 0:
+            logger.info(new_data)
+            count += 1
         extracted_data = await extract_data(new_data)
         data = await self.trainer.prepare_data(extracted_data)
         anomaly_score = await self.trainer.predict_anomaly_score(data)
