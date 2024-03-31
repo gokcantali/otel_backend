@@ -6,7 +6,7 @@ import torch.optim as optim
 
 
 class Net(torch.nn.Module):
-    async def __init__(self, num_node_features, num_edge_features, num_classes):
+    def __init__(self, num_node_features, num_edge_features, num_classes):
         super(Net, self).__init__()
         nn = Sequential(Linear(num_edge_features, 8), ReLU(), Linear(8, num_node_features * num_classes))
         self.conv = NNConv(num_node_features, num_classes, nn, aggr='mean')

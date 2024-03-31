@@ -5,7 +5,7 @@ import torch.optim as optim
 
 
 class IncrementalGraphTrainer:
-    async def __init__(self, model, optimizer):
+    def __init__(self, model, optimizer):
         self.model = model
         self.optimizer = optimizer
         self.label_encodings = {

@@ -10,7 +10,7 @@ GRAPH_MODEL = None
 
 
 class GraphModel:
-    async def __init__(self):
+    def __init__(self):
         self.model = Net(num_node_features=1, num_edge_features=4, num_classes=2)
         self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
         self.trainer = IncrementalGraphTrainer(self.model, self.optimizer)
