@@ -3,7 +3,6 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-
 class IncrementalGraphTrainer:
     def __init__(self, model, optimizer):
         self.model = model
@@ -14,7 +13,7 @@ class IncrementalGraphTrainer:
             'source_port_label': {'encoding': {}, 'current_id': 0},
             'destination_port_label': {'encoding': {}, 'current_id': 0},
         }
-
+        
     async def encode_label(self, label_type, label_value):
         encoding_dict = self.label_encodings[label_type]['encoding']
         current_id = self.label_encodings[label_type]['current_id']
@@ -40,7 +39,8 @@ class IncrementalGraphTrainer:
             out = await self.model(data)
             target = torch.tensor([[0.5, 0.5]])  # This target can be adjusted
             loss = F.mse_loss(out, target, reduction='none')
-            anomaly_score = loss.mean(dim=1).item()  # Average loss as anomaly score
+            # Assuming loss is already reduced to the desired shape, further reduce it if necessary
+            anomaly_score = loss.mean().item()  # Reduce to a single scalar value and convert to Python number
         return anomaly_score
 
     async def update_model(self, data):
