@@ -29,3 +29,6 @@ env.bak/
 venv.bak/
 .idea/
 .vscode/
+
+tests/assets/anomaly_probability_plot.png
+tests/assets/training_loss_plot.png

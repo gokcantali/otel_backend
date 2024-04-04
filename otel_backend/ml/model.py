@@ -21,30 +21,38 @@ class GATNetWrapper:
         self.model = GATNet(num_node_features=2, num_edge_features=2, num_classes=2)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=5e-4)
 
-    def train(self, trace: Trace) -> float:
+    def train(self, trace: Trace):
         """
-        Trains the GATNet model on a single batch of traces.
-        
+        Trains the GATNet model on a single batch of traces and returns the anomaly probability for the currently added edge.
+
         Parameters:
-            trace (Data): A PyTorch Geometric Data object representing a single trace or a batch of traces.
-        
+            trace (Trace): A single trace object to be processed and trained on.
+
         Returns:
-            float: The loss value computed for the batch of traces.
+            loss (float): The loss value computed for the batch of traces.
+            anomaly_prob (float): The anomaly probability for the currently added edge.
         """
-        data = preprocess_traces([trace])
+        data = preprocess_traces(trace)
         self.model.train()
         self.optimizer.zero_grad()
         out = self.model(data.x, data.edge_index, data.edge_attr)
-        target = torch.tensor([0] * data.num_nodes, dtype=torch.long)  # Placeholder for actual targets
+
+        # Hypothetical example with is a list of integers
+        # 0 representing the true class of each node
+        target = torch.tensor([0, 0], dtype=torch.long)
+
         loss = F.nll_loss(out, target)
         loss.backward()
         self.optimizer.step()
-        return loss.item()
+
+        anomaly_prob = torch.softmax(out, dim=1)[-1][1].item()
+
+        return loss.item(), anomaly_prob
 
 def get_model() -> GATNetWrapper:
     """
     Returns a singleton instance of the GATNetWrapper class.
-    
+
     Returns:
         GATNetWrapper: The singleton instance of GATNetWrapper.
     """

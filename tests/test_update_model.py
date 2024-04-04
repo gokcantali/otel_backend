@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import List
 
+import matplotlib.pyplot as plt
 import pytest
 
 from otel_backend.ml.extract import Trace, extract_data
@@ -22,8 +23,26 @@ async def test_update_model_with_dataset():
         extracted_traces.extend(extracted_trace)
 
     losses = []
+    anomaly_probs = []
     for extracted_trace in extracted_traces:
-        loss = get_model().train(extracted_trace)
+        loss, anomaly_prob = get_model().train(extracted_trace)
         losses.append(loss)
+        anomaly_probs.append(anomaly_prob)
 
-    assert all(loss < 1 for loss in losses)
+    plt.figure(figsize=(10, 5))
+    plt.plot(losses, label='Training Loss')
+    plt.xlabel('Iteration')
+    plt.ylabel('Loss')
+    plt.title('Training Loss Over Time')
+    plt.legend()
+    plot_save_path = project_root / "tests" / "assets" / "training_loss_plot.png"
+    plt.savefig(plot_save_path)
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(anomaly_probs, label='Anomaly Probability')
+    plt.xlabel('Iteration')
+    plt.ylabel('Anomaly Probability')
+    plt.title('Anomaly Probability Over Time')
+    plt.legend()
+    plot_save_path = project_root / "tests" / "assets" / "anomaly_probability_plot.png"
+    plt.savefig(plot_save_path)

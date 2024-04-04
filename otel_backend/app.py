@@ -7,7 +7,7 @@ from otel_backend.deserializers import (
     deserialize_trace,
 )
 from otel_backend.ml.extract import extract_data
-from otel_backend.ml.graph_model import get_graph_model
+from otel_backend.ml.model import get_model
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 
 app = FastAPI()
@@ -18,10 +18,9 @@ async def receive_traces(request: Request) -> TraceResponse:
     try:
         raw_data = await request.body()
         trace = await deserialize_trace(raw_data)
-        graph = get_graph_model()
         extracted_traces = await extract_data(trace)
         for extracted_trace in extracted_traces:
-            graph.train(extracted_trace)
+            get_model().train(extracted_trace)
         return TraceResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")

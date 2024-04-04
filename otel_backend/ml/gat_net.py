@@ -1,5 +1,3 @@
-from typing import List
-
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
@@ -48,7 +46,7 @@ class GATNet(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
 
-def preprocess_traces(traces: List[Trace]) -> Data:
+def preprocess_traces(trace: Trace) -> Data:
     """
     Processes a list of Trace objects into a PyTorch Geometric Data object suitable
     for GAT model input.
@@ -65,24 +63,23 @@ def preprocess_traces(traces: List[Trace]) -> Data:
     node_index = {}
     current_index = 0
 
-    for trace in traces:
-        if trace.ip_source not in node_index:
-            node_index[trace.ip_source] = current_index
-            current_index += 1
-        if trace.ip_destination not in node_index:
-            node_index[trace.ip_destination] = current_index
-            current_index += 1
+    if trace.ip_source not in node_index:
+        node_index[trace.ip_source] = current_index
+        current_index += 1
+    if trace.ip_destination not in node_index:
+        node_index[trace.ip_destination] = current_index
+        current_index += 1
 
-        source_idx = node_index[trace.ip_source]
-        dest_idx = node_index[trace.ip_destination]
-        
-        edge_index.append([source_idx, dest_idx])
+    source_idx = node_index[trace.ip_source]
+    dest_idx = node_index[trace.ip_destination]
 
-        edge_features = [
-            int(trace.labels.ack_flag == 'true'),
-            trace.labels.psh_flag
-        ]
-        edge_attr.append(edge_features)
+    edge_index.append([source_idx, dest_idx])
+
+    edge_features = [
+        int(trace.labels.ack_flag == 'true'),
+        trace.labels.psh_flag
+    ]
+    edge_attr.append(edge_features)
 
     num_nodes = current_index
     x = torch.eye(num_nodes)
