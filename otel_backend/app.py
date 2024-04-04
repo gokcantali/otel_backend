@@ -1,17 +1,14 @@
-from fastapi import FastAPI
-from fastapi import HTTPException
-from fastapi import Request
+from fastapi import FastAPI, HTTPException, Request
 
 from otel_backend import logger
-from otel_backend.deserializers import deserialize_logs
-from otel_backend.deserializers import deserialize_metrics
-from otel_backend.deserializers import deserialize_trace
-from otel_backend.ml.graph_model import get_graph_model
-from otel_backend.models import LogsResponse
-from otel_backend.models import MetricsResponse
-from otel_backend.models import TraceResponse
+from otel_backend.deserializers import (
+    deserialize_logs,
+    deserialize_metrics,
+    deserialize_trace,
+)
 from otel_backend.ml.extract import extract_data
-
+from otel_backend.ml.graph_model import get_graph_model
+from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 
 app = FastAPI()
 
@@ -21,10 +18,10 @@ async def receive_traces(request: Request) -> TraceResponse:
     try:
         raw_data = await request.body()
         trace = await deserialize_trace(raw_data)
-        graph = await get_graph_model()
+        graph = get_graph_model()
         extracted_traces = await extract_data(trace)
         for extracted_trace in extracted_traces:
-            await graph.train(extracted_trace)
+            graph.train(extracted_trace)
         return TraceResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")
@@ -57,4 +54,5 @@ async def receive_logs(request: Request) -> LogsResponse:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
