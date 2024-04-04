@@ -24,8 +24,9 @@ async def test_update_model_with_dataset():
 
     losses = []
     anomaly_probs = []
-    for extracted_trace in extracted_traces:
-        loss, anomaly_prob = get_model().train(extracted_trace)
+    for i, extracted_trace in enumerate(extracted_traces):
+        is_anomaly = ((i + 1) % 30 == 0)
+        loss, anomaly_prob = get_model().train(extracted_trace, is_anomaly=is_anomaly)
         losses.append(loss)
         anomaly_probs.append(anomaly_prob)
 
