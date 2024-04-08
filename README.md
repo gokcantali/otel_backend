@@ -4,6 +4,20 @@ This is a simple otel backend that can receive logs, metrics and traces.
 The traces endpoint is expecting cilium traces feeding them into
 a gnn model with convolutional layers for the edge features.
 
+## install
+
+```bash
+```
+
+## lint/format
+
+```bash
+poetry run ruff check . --fix
+
+# or if nix
+ruff check . --fix
+```
+
 ## run app
 
 ```bash
