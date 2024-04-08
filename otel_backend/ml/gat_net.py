@@ -1,9 +1,33 @@
-import torch
-import torch.nn.functional as F
+from collections import defaultdict
 from torch_geometric.data import Data
 from torch_geometric.nn import GATConv
+import numpy as np
+import torch
+import torch.nn.functional as F
 
 from otel_backend.ml.extract import Trace
+
+
+class LabelEmbeddings:
+    def __init__(self, embedding_dim=16):
+        self.pod_embeddings = torch.nn.Embedding(num_embeddings=1000, embedding_dim=embedding_dim)
+        self.namespace_embeddings = torch.nn.Embedding(num_embeddings=1000, embedding_dim=embedding_dim)
+        self.pod_label_to_index = {}
+        self.namespace_label_to_index = {}
+        self.pod_counter = 0
+        self.namespace_counter = 0
+
+    def get_pod_embedding(self, pod_label):
+        if pod_label not in self.pod_label_to_index:
+            self.pod_label_to_index[pod_label] = self.pod_counter
+            self.pod_counter += 1
+        return self.pod_embeddings(torch.tensor([self.pod_label_to_index[pod_label]], dtype=torch.long))
+
+    def get_namespace_embedding(self, namespace_label):
+        if namespace_label not in self.namespace_label_to_index:
+            self.namespace_label_to_index[namespace_label] = self.namespace_counter
+            self.namespace_counter += 1
+        return self.namespace_embeddings(torch.tensor([self.namespace_label_to_index[namespace_label]], dtype=torch.long))
 
 
 class GATNet(torch.nn.Module):
@@ -28,6 +52,11 @@ class GATNet(torch.nn.Module):
         super(GATNet, self).__init__()
         self.conv1 = GATConv(num_node_features, 8, add_self_loops=False)
         self.conv2 = GATConv(8, num_classes, add_self_loops=False)
+
+        self.pod_label_encoder = {}
+        self.namespace_label_encoder = {}
+
+        self.label_embeddings = LabelEmbeddings()
         
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor, edge_attr: torch.Tensor = None) -> torch.Tensor:
         """
@@ -46,44 +75,77 @@ class GATNet(torch.nn.Module):
         x = self.conv2(x, edge_index)
         return F.log_softmax(x, dim=1)
 
-def preprocess_traces(trace: Trace) -> Data:
-    """
-    Processes a list of Trace objects into a PyTorch Geometric Data object suitable
-    for GAT model input.
-    
-    Parameters:
-        traces (List[Trace]): A list of Trace dataclass instances to be processed.
-    
-    Returns:
-        Data: A PyTorch Geometric Data object containing the processed graph data.
-    """
-    edge_index = []
-    edge_attr = []
+    def encode_label(self, label, encoder):
+        """
+        Dynamically encodes a label, adding it to the encoder if not present.
 
-    node_index = {}
-    current_index = 0
+        Parameters:
+            label (str): The label to encode.
+            encoder (dict): The encoder dictionary.
 
-    if trace.ip_source not in node_index:
-        node_index[trace.ip_source] = current_index
-        current_index += 1
-    if trace.ip_destination not in node_index:
-        node_index[trace.ip_destination] = current_index
-        current_index += 1
+        Returns:
+            int: The encoded label.
+        """
+        if label not in encoder:
+            encoder[label] = len(encoder)
+        return encoder[label]
 
-    source_idx = node_index[trace.ip_source]
-    dest_idx = node_index[trace.ip_destination]
+    def preprocess_traces(self, trace: Trace):
+        """
+        Processes a single trace object, encoding features dynamically and
+        preparing data for the GATNet model. Utilizes embeddings for
+        pod and namespace labels.
 
-    edge_index.append([source_idx, dest_idx])
+        Parameters:
+            trace (Trace): A single trace object to be processed.
 
-    edge_features = [
-        int(trace.labels.ack_flag == 'true'),
-        trace.labels.psh_flag
-    ]
-    edge_attr.append(edge_features)
+        Returns:
+            Data: A PyTorch Geometric Data object with the processed graph.
+        """
+        node_features = defaultdict(lambda: np.zeros((36,)))  # Adjusted feature size
 
-    num_nodes = current_index
-    x = torch.eye(num_nodes)
-    edge_index = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
-    edge_attr = torch.tensor(edge_attr, dtype=torch.float)
+        edge_index = []
+        edge_attr = []
 
-    return Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        node_index = {}
+        current_index = 0
+
+        for ip, labels in [
+                (trace.ip_source, trace.labels),
+                (trace.ip_destination, trace.labels)
+        ]:
+            if ip not in node_index:
+                node_index[ip] = current_index
+
+                # Extract IP address features
+                ip_features = [int(octet) for octet in ip.split('.')[:4]]
+
+                # Get embeddings for pod and namespace labels
+                pod_embedding = self.label_embeddings.get_pod_embedding(
+                    labels.pod_label).detach().numpy()
+                namespace_embedding = self.label_embeddings.get_namespace_embedding(
+                    labels.namespace_label).detach().numpy()
+
+                # Combine IP features with label embeddings
+                combined_features = np.concatenate((
+                    ip_features, pod_embedding.flatten(), namespace_embedding.flatten()))
+                node_features[current_index] = combined_features
+
+                current_index += 1
+
+        # Ensure we only add valid edges
+        if trace.ip_source in node_index and trace.ip_destination in node_index:
+            source_idx = node_index[trace.ip_source]
+            dest_idx = node_index[trace.ip_destination]
+            edge_index.append([source_idx, dest_idx])
+
+        # Convert dictionaries and lists to tensors for PyTorch Geometric
+        x = torch.tensor(list(node_features.values()), dtype=torch.float)
+        edge_index_tensor = (
+            torch.tensor(edge_index, dtype=torch.long).t().contiguous()
+            if edge_index
+            else torch.empty((2, 0), dtype=torch.long))
+        # Assuming edge_attr is properly handled elsewhere
+        edge_attr_tensor = torch.tensor(edge_attr, dtype=torch.float)
+
+        return Data(x=x, edge_index=edge_index_tensor, edge_attr=edge_attr_tensor)

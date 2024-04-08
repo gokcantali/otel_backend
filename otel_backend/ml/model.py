@@ -3,7 +3,7 @@ from torch.types import Number
 import torch
 
 from otel_backend.ml.extract import Trace
-from otel_backend.ml.gat_net import GATNet, preprocess_traces
+from otel_backend.ml.gat_net import GATNet
 
 MODEL = None
 
@@ -19,7 +19,9 @@ class GATNetWrapper:
         """
         Initializes the GATNet model and its optimizer.
         """
-        self.model = GATNet(num_node_features=2, num_edge_features=2, num_classes=2)
+        # 4 for IP + 16 for Pod Embedding + 16 for Namespace Embedding
+        num_node_features = 36
+        self.model = GATNet(num_node_features=num_node_features, num_edge_features=2, num_classes=2)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=5e-4)
 
     def train(self, trace: Trace, is_anomaly: bool = False) -> tuple[Number, Number]:
@@ -33,7 +35,7 @@ class GATNetWrapper:
             loss (float): The loss value computed for the batch of traces.
             anomaly_prob (float): The anomaly probability for the currently added edge.
         """
-        data = preprocess_traces(trace)
+        data = self.model.preprocess_traces(trace)
         self.model.train()
         self.optimizer.zero_grad()
         out = self.model(data.x, data.edge_index, data.edge_attr)
