@@ -14,7 +14,7 @@ class TraceLabels:
     destination_namespace_label: str = ""
     destination_port_label: str = ""
 
-    ack_flag: str = ""
+    ack_flag: bool = False
     psh_flag: bool = False
 
 
@@ -46,43 +46,33 @@ async def extract_data(trace) -> List[Trace]:
                                 "value"
                             ]["stringValue"]
                         elif (
-                            attribute["key"]
-                            == "cilium.flow_event.l4.TCP.destination_port"
+                                attribute["key"]
+                                == "cilium.flow_event.l4.TCP.destination_port"
                         ):
                             trace_instance.labels.destination_port_label = attribute[
                                 "value"
                             ]["stringValue"]
                         elif attribute["key"] == "cilium.flow_event.l4.TCP.flags.ACK":
                             trace_instance.labels.ack_flag = attribute["value"][
-                                "stringValue"
-                            ]
+                                "stringValue" == "true"
+                                ]
                         elif attribute["key"] == "cilium.flow_event.l4.TCP.flags.PSH":
-                            trace_instance.labels.psh_flag = (
-                                attribute["value"]["stringValue"] == "true"
-                            )
+                            trace_instance.labels.psh_flag = attribute["value"]["stringValue"] == "true"
 
                         elif attribute["key"] == "cilium.flow_event.source.namespace":
-                            trace_instance.labels.source_namespace_label = (
-                                    attribute["value"]["stringValue"] == "true"
-                            )
+                            trace_instance.labels.source_namespace_label = attribute["value"]["stringValue"]
 
                         elif attribute["key"] == "cilium.flow_event.destination.namespace":
-                            trace_instance.labels.destination_namespace_label = (
-                                    attribute["value"]["stringValue"] == "true"
-                            )
+                            trace_instance.labels.destination_namespace_label = attribute["value"]["stringValue"]
 
                         elif attribute["key"] == "cilium.flow_event.source.pod_name":
-                            trace_instance.labels.source_pod_label = (
-                                    attribute["value"]["stringValue"] == "true"
-                            )
+                            trace_instance.labels.source_pod_label = attribute["value"]["stringValue"]
 
                         elif attribute["key"] == "cilium.flow_event.destination.pod_name":
-                            trace_instance.labels.destination_pod_label = (
-                                    attribute["value"]["stringValue"] == "true"
-                            )
+                            trace_instance.labels.destination_pod_label = attribute["value"]["stringValue"]
                         elif attribute["key"] == "cilium.flow_event.source.labels.is_anomaly":
                             trace_instance.is_anomaly = (
-                                attribute["value"]["stringValue"] == "true"
+                                    attribute["value"]["stringValue"] == "true"
                             )
             extracted_info.append(trace_instance)
         except KeyError as e:
