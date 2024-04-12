@@ -19,23 +19,14 @@ app = FastAPI()
 
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request) -> TraceResponse:
+    global TRACES
     raw_data = await request.body()
     trace = None
     extracted_traces = []
     try:
         trace = await deserialize_trace(raw_data)
-    except Exception as e:
-        logger.error(f"Error deserializing trace: {e}, data: {raw_data}")
-        raise HTTPException(status_code=400, detail="Error deserializing trace")
-
-    try:
         extracted_traces = await extract_data(trace)
-        TRACES.extend(extracted_traces)
-    except Exception as e:
-        logger.error(f"Error extracting data from trace: {e}, trace: {trace}")
-        raise HTTPException(status_code=400, detail="Error extracting data from trace")
-
-    try:
+        TRACES = extracted_traces
         model = get_model()
         for extracted_trace in extracted_traces:
             model.train(extracted_trace)
