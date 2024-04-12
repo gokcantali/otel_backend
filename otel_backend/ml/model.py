@@ -5,6 +5,7 @@ import torch
 from otel_backend.ml import logger
 from otel_backend.ml.extract import Trace
 from otel_backend.ml.gat_net import GATNet
+from otel_backend.ml import NODE_EMBEDDING_SIZE
 
 MODEL = None
 
@@ -20,9 +21,7 @@ class GATNetWrapper:
         """
         Initializes the GATNet model and its optimizer.
         """
-        # 4 for IP + 16 for Pod Embedding + 16 for Namespace Embedding
-        num_node_features = 36
-        self.model = GATNet(num_node_features=num_node_features, num_edge_features=2, num_classes=2)
+        self.model = GATNet(num_node_features=NODE_EMBEDDING_SIZE, num_edge_features=2, num_classes=2)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=5e-4)
 
     def train(self, trace: Trace, is_anomaly: bool = False) -> tuple[Number, Number]:
