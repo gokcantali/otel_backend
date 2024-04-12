@@ -24,7 +24,7 @@ class GATNetWrapper:
         self.model = GATNet(num_node_features=NODE_EMBEDDING_SIZE, num_edge_features=2, num_classes=2)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=0.01, weight_decay=5e-4)
 
-    def train(self, trace: Trace, is_anomaly: bool = False) -> tuple[Number, Number]:
+    def train(self, trace: Trace) -> tuple[Number, Number]:
         """
         Trains the GATNet model on a single batch of traces and returns the anomaly probability for the currently added edge.
 
@@ -42,7 +42,7 @@ class GATNetWrapper:
 
         # Hypothetical example with is a list of integers
         # 0/1 representing the true class of each node
-        if is_anomaly:
+        if trace.is_anomaly:
             target = torch.tensor([1, 1], dtype=torch.long)
         else:
             target = torch.tensor([0, 0], dtype=torch.long)

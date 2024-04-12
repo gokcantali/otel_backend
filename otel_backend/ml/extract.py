@@ -22,6 +22,7 @@ class TraceLabels:
 class Trace:
     ip_source: str = ""
     ip_destination: str = ""
+    is_anomaly: bool = False
     labels: TraceLabels = field(default_factory=TraceLabels)
 
 
@@ -78,6 +79,10 @@ async def extract_data(trace) -> List[Trace]:
                         elif attribute["key"] == "cilium.flow_event.destination.pod_name":
                             trace_instance.labels.destination_pod_label = (
                                     attribute["value"]["stringValue"] == "true"
+                            )
+                        elif attribute["key"] == "cilium.flow_event.source.labels.is_anomaly":
+                            trace_instance.is_anomaly = (
+                                attribute["value"]["stringValue"] == "true"
                             )
             extracted_info.append(trace_instance)
         except KeyError as e:
