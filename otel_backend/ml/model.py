@@ -2,6 +2,7 @@ from torch.nn import functional as F
 from torch.types import Number
 import torch
 
+from otel_backend.ml import logger
 from otel_backend.ml.extract import Trace
 from otel_backend.ml.gat_net import GATNet
 
@@ -52,6 +53,8 @@ class GATNetWrapper:
         self.optimizer.step()
 
         anomaly_prob = torch.softmax(out, dim=1)[-1][1].item()
+
+        logger.info(f"Anomaly Probability: {anomaly_prob} | Loss: {loss.item()}")
 
         return loss.item(), anomaly_prob
 
