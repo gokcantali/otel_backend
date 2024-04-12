@@ -2,10 +2,9 @@ import json
 from pathlib import Path
 from typing import List
 
-import matplotlib.pyplot as plt
 import pytest
 
-from otel_backend.ml.extract import Trace, extract_data, TraceLabels
+from otel_backend.ml.extract import Trace, TraceLabels, extract_data
 from otel_backend.ml.model import get_model
 
 

@@ -1,12 +1,14 @@
+from hashlib import sha256
+
 import numpy as np
 import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import GATConv
-from hashlib import sha256
 
-from otel_backend.ml.extract import Trace
 from otel_backend.ml import NODE_EMBEDDING_SIZE
+from otel_backend.ml.extract import Trace
+
 
 class LabelEmbeddings:
     def __init__(self, embedding_dim=16):

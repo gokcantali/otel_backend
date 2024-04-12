@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import FastAPI, HTTPException, Request
 
 from otel_backend import logger
@@ -6,11 +8,9 @@ from otel_backend.deserializers import (
     deserialize_metrics,
     deserialize_trace,
 )
-from otel_backend.ml.extract import extract_data, Trace
+from otel_backend.ml.extract import Trace, extract_data
 from otel_backend.ml.model import get_model
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
-from typing import List
-
 
 TRACES: List[Trace] = []
 

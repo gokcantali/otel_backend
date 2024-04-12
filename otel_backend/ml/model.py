@@ -1,11 +1,10 @@
+import torch
 from torch.nn import functional as F
 from torch.types import Number
-import torch
 
-from otel_backend.ml import logger
+from otel_backend.ml import NODE_EMBEDDING_SIZE, logger
 from otel_backend.ml.extract import Trace
 from otel_backend.ml.gat_net import GATNet
-from otel_backend.ml import NODE_EMBEDDING_SIZE
 
 MODEL = None
 
