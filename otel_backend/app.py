@@ -6,9 +6,13 @@ from otel_backend.deserializers import (
     deserialize_metrics,
     deserialize_trace,
 )
-from otel_backend.ml.extract import extract_data
+from otel_backend.ml.extract import extract_data, Trace
 from otel_backend.ml.model import get_model
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
+from typing import List
+
+
+TRACES: List[Trace] = []
 
 app = FastAPI()
 
@@ -26,6 +30,7 @@ async def receive_traces(request: Request) -> TraceResponse:
 
     try:
         extracted_traces = await extract_data(trace)
+        TRACES.extend(extracted_traces)
     except Exception as e:
         logger.error(f"Error extracting data from trace: {e}, trace: {trace}")
         raise HTTPException(status_code=400, detail="Error extracting data from trace")
@@ -62,6 +67,11 @@ async def receive_logs(request: Request) -> LogsResponse:
     except Exception as e:
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/traces", response_model=List[Trace])
+async def get_traces():
+    return TRACES
 
 
 if __name__ == "__main__":
