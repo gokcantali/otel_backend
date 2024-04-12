@@ -11,6 +11,7 @@ from otel_backend.deserializers import (
 from otel_backend.ml.extract import Trace, extract_data
 from otel_backend.ml.model import get_model
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
+from torch.types import Number
 
 TRACES: List[Trace] = []
 
@@ -63,6 +64,13 @@ async def receive_logs(request: Request) -> LogsResponse:
 @app.get("/traces", response_model=List[Trace])
 async def get_traces():
     return TRACES
+
+
+@app.post("/predict", response_model=Number)
+async def predict(trace: Trace):
+    model = get_model()
+    anomaly_prediction = model.predict(trace)
+    return anomaly_prediction
 
 
 if __name__ == "__main__":

@@ -56,6 +56,12 @@ class GATNetWrapper:
 
         return loss.item(), anomaly_prob
 
+    def predict(self, trace: Trace) -> Number:
+        data = self.model.preprocess_traces(trace)
+        out = self.model(data.x, data.edge_index, data.edge_attr)
+        anomaly_prob = torch.softmax(out, dim=1)[-1][1].item()
+        return anomaly_prob
+
 def get_model() -> GATNetWrapper:
     """
     Returns a singleton instance of the GATNetWrapper class.
