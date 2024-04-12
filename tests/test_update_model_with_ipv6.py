@@ -10,12 +10,9 @@ from otel_backend.ml.model import get_model
 
 
 def load_trace_data(json_data: str) -> List[Trace]:
-    # Parse the JSON data
-    data = json.loads(json_data)
-
     # Convert each item to a Trace instance
     traces = []
-    for item in data:
+    for item in json_data:
         # Extract label data
         label_data = item.get('labels', {})
         labels = TraceLabels(

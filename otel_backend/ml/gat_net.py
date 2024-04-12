@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch_geometric.data import Data
 from torch_geometric.nn import GATConv
+from hashlib import sha256
 
 from otel_backend.ml.extract import Trace
 from otel_backend.ml import NODE_EMBEDDING_SIZE
@@ -20,6 +21,10 @@ class LabelEmbeddings:
             self.label_to_index[label] = self.label_counter
             self.label_counter += 1
         return self.port_embeddings(torch.tensor([self.label_to_index[label]], dtype=torch.long))
+
+def hash_ip(ip_address, feature_length=16):
+    hash_digest = sha256(ip_address.encode()).digest()
+    return np.array([b for b in hash_digest[:feature_length]], dtype=np.float32) / 255
 
 class GATNet(torch.nn.Module):
     def __init__(self, num_node_features: int, num_edge_features: int, num_classes: int):
@@ -41,8 +46,8 @@ class GATNet(torch.nn.Module):
         node_index = {}
 
         # Extract IP address features
-        source_ip_features = np.array([int(octet) for octet in trace.ip_source.split('.')], dtype=np.float32)
-        destination_ip_features = np.array([int(octet) for octet in trace.ip_destination.split('.')], dtype=np.float32)
+        source_ip_features = hash_ip(trace.ip_source)
+        destination_ip_features = hash_ip(trace.ip_destination)
 
         # Get embeddings for pod and namespace labels
         source_pod_embedding = self.label_embeddings.get_embedding(
