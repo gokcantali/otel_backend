@@ -77,7 +77,7 @@ class GATNet(torch.nn.Module):
         if source_idx is not None and dest_idx is not None:
             edge_index.append([source_idx, dest_idx])
             # Convert TCP flags to integer and include them in edge attributes
-            ack_flag = int(trace.labels.ack_flag) if trace.labels.ack_flag.isdigit() else 0
+            ack_flag = int(trace.labels.ack_flag)
             psh_flag = int(trace.labels.psh_flag)
             edge_attr.append(np.concatenate([source_port_embedding, destination_port_embedding, [ack_flag, psh_flag]]))
 
