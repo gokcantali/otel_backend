@@ -11,15 +11,22 @@ class LabelEmbeddings:
     def __init__(self, embedding_dim=16):
         self.pod_embeddings = torch.nn.Embedding(num_embeddings=1000, embedding_dim=embedding_dim)
         self.namespace_embeddings = torch.nn.Embedding(num_embeddings=1000, embedding_dim=embedding_dim)
-        self.port_embeddings = torch.nn.Embedding(num_embeddings=65536, embedding_dim=embedding_dim)  # For ports, assuming a max of 65535
-        self.label_to_index = {}
-        self.label_counter = 0
+        self.pod_label_to_index = {}
+        self.namespace_label_to_index = {}
+        self.pod_counter = 0
+        self.namespace_counter = 0
 
-    def get_embedding(self, label):
-        if label not in self.label_to_index:
-            self.label_to_index[label] = self.label_counter
-            self.label_counter += 1
-        return self.port_embeddings(torch.tensor([self.label_to_index[label]], dtype=torch.long))
+    def get_pod_embedding(self, pod_label):
+        if pod_label not in self.pod_label_to_index:
+            self.pod_label_to_index[pod_label] = self.pod_counter
+            self.pod_counter += 1
+        return self.pod_embeddings(torch.tensor([self.pod_label_to_index[pod_label]], dtype=torch.long))
+
+    def get_namespace_embedding(self, namespace_label):
+        if namespace_label not in self.namespace_label_to_index:
+            self.namespace_label_to_index[namespace_label] = self.namespace_counter
+            self.namespace_counter += 1
+        return self.namespace_embeddings(torch.tensor([self.namespace_label_to_index[namespace_label]], dtype=torch.long))
 
 class GATNet(torch.nn.Module):
     def __init__(self, num_node_features: int, num_edge_features: int, num_classes: int):
@@ -37,7 +44,7 @@ class GATNet(torch.nn.Module):
     def preprocess_traces(self, trace: Trace):
         node_features = []
         edge_index = []
-        edge_attr = []
+        edge_attr = []  # List to store edge attributes
         node_index = {}
 
         # Extract IP address features
@@ -45,20 +52,14 @@ class GATNet(torch.nn.Module):
         destination_ip_features = np.array([int(octet) for octet in trace.ip_destination.split('.')], dtype=np.float32)
 
         # Get embeddings for pod and namespace labels
-        source_pod_embedding = self.label_embeddings.get_embedding(
+        source_pod_embedding = self.label_embeddings.get_pod_embedding(
             trace.labels.source_pod_label).detach().numpy().flatten()
-        source_namespace_embedding = self.label_embeddings.get_embedding(
+        source_namespace_embedding = self.label_embeddings.get_namespace_embedding(
             trace.labels.source_namespace_label).detach().numpy().flatten()
-        destination_pod_embedding = self.label_embeddings.get_embedding(
+        destination_pod_embedding = self.label_embeddings.get_pod_embedding(
             trace.labels.destination_pod_label).detach().numpy().flatten()
-        destination_namespace_embedding = self.label_embeddings.get_embedding(
+        destination_namespace_embedding = self.label_embeddings.get_namespace_embedding(
             trace.labels.destination_namespace_label).detach().numpy().flatten()
-
-        # Embed port data
-        source_port_embedding = self.label_embeddings.get_embedding(
-            trace.labels.source_port_label).detach().numpy().flatten()
-        destination_port_embedding = self.label_embeddings.get_embedding(
-            trace.labels.destination_port_label).detach().numpy().flatten()
 
         # Combine Source IP features with label embeddings
         source_combined_features = np.concatenate(
@@ -66,25 +67,27 @@ class GATNet(torch.nn.Module):
         destination_combined_features = np.concatenate(
             [destination_ip_features, destination_pod_embedding, destination_namespace_embedding])
 
+        # Ensure features sizes are adjusted to NODE_EMBEDDING_SIZE
         node_features.append(source_combined_features[:NODE_EMBEDDING_SIZE])
-        node_index[trace.ip_source] = len(node_features) - 1
+        node_index[trace.ip_source] = len(node_features) - 1  # Current index of source
 
         node_features.append(destination_combined_features[:NODE_EMBEDDING_SIZE])
-        node_index[trace.ip_destination] = len(node_features) - 1
+        node_index[trace.ip_destination] = len(node_features) - 1  # Current index of destination
 
+        # Add edge between source and destination
         source_idx = node_index.get(trace.ip_source)
         dest_idx = node_index.get(trace.ip_destination)
         if source_idx is not None and dest_idx is not None:
             edge_index.append([source_idx, dest_idx])
-            # Convert TCP flags to integer and include them in edge attributes
-            ack_flag = int(trace.labels.ack_flag) if trace.labels.ack_flag.isdigit() else 0
-            psh_flag = int(trace.labels.psh_flag)
-            edge_attr.append(np.concatenate([source_port_embedding, destination_port_embedding, [ack_flag, psh_flag]]))
+            # Add source and destination ports as edge attributes
+            edge_attr.append([trace.labels.source_port_label, trace.labels.destination_port_label])
 
+        # Convert lists to tensors
         x = torch.tensor(node_features, dtype=torch.float)
-        edge_index_tensor = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
-        edge_attr_tensor = torch.tensor(edge_attr, dtype=torch.float) if edge_attr else torch.empty(
-            (0, 2 * self.label_embeddings.embedding_dim + 2), dtype=torch.float)
+        edge_index_tensor = torch.tensor(edge_index, dtype=torch.long).t().contiguous() if edge_index else torch.empty(
+            (2, 0), dtype=torch.long)
+        edge_attr_tensor = torch.tensor(edge_attr, dtype=torch.float) if edge_attr else torch.empty((0, 2), dtype=torch.float)
 
-        return Data(x=x, edge_index=edge_index_tensor, edge_attr=edge_attr_tensor)
-
+        # Create the PyTorch Geometric Data object to encapsulate the graph data
+        graph_data = Data(x=x, edge_index=edge_index_tensor, edge_attr=edge_attr_tensor)
+        return graph_data
