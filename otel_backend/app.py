@@ -16,21 +16,28 @@ app = FastAPI()
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request) -> TraceResponse:
     raw_data = await request.body()
+    trace = None
+    extracted_traces = []
     try:
         trace = await deserialize_trace(raw_data)
     except Exception as e:
-        logger.error(f"Error deserializing trace: {raw_data}")
+        logger.error(f"Error deserializing trace: {e}, data: {raw_data}")
+        raise HTTPException(status_code=400, detail="Error deserializing trace")
+
     try:
         extracted_traces = await extract_data(trace)
     except Exception as e:
-        logger.error(f"Error extracting data: {trace}")
+        logger.error(f"Error extracting data from trace: {e}, trace: {trace}")
+        raise HTTPException(status_code=400, detail="Error extracting data from trace")
+
     try:
+        model = get_model()
         for extracted_trace in extracted_traces:
-            get_model().train(extracted_trace)
+            model.train(extracted_trace)
         return TraceResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail="Error processing request")
 
 
 @app.post("/v1/metrics", response_model=MetricsResponse)
