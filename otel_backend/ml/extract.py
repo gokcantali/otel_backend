@@ -54,8 +54,7 @@ async def extract_data(trace) -> List[Trace]:
                             ]["stringValue"]
                         elif attribute["key"] == "cilium.flow_event.l4.TCP.flags.ACK":
                             trace_instance.labels.ack_flag = attribute["value"][
-                                "stringValue" == "true"
-                                ]
+                                "stringValue"] == "true"
                         elif attribute["key"] == "cilium.flow_event.l4.TCP.flags.PSH":
                             trace_instance.labels.psh_flag = attribute["value"]["stringValue"] == "true"
 
