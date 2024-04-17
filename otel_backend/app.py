@@ -1,6 +1,10 @@
+import csv
+import io
+import zipfile
 from typing import List
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
+from torch.types import Number
 
 from otel_backend import logger
 from otel_backend.deserializers import (
@@ -11,7 +15,6 @@ from otel_backend.deserializers import (
 from otel_backend.ml.extract import Trace, extract_data
 from otel_backend.ml.model import get_model
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
-from torch.types import Number
 
 TRACES: List[Trace] = []
 
@@ -27,10 +30,7 @@ async def receive_traces(request: Request) -> TraceResponse:
     try:
         trace = await deserialize_trace(raw_data)
         extracted_traces = await extract_data(trace)
-        TRACES = extracted_traces
-        model = get_model()
-        for extracted_trace in extracted_traces:
-            model.train(extracted_trace)
+        TRACES.extend(extracted_traces)
         return TraceResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")
@@ -60,11 +60,34 @@ async def receive_logs(request: Request) -> LogsResponse:
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-
-@app.get("/traces", response_model=List[Trace])
-async def get_traces():
-    return TRACES
-
+@app.get("/traces.csv")
+async def get_traces_csv(response: Response):
+    csv_data = io.StringIO()
+    csv_writer = csv.writer(csv_data)
+    csv_writer.writerow(['ip_source', 'ip_destination', 'is_anomaly',
+                         'source_pod_label', 'source_namespace_label', 'source_port_label',
+                         'destination_pod_label', 'destination_namespace_label', 'destination_port_label',
+                         'ack_flag', 'psh_flag'])
+    for trace in TRACES:
+        csv_writer.writerow([
+            trace.ip_source,
+            trace.ip_destination,
+            trace.is_anomaly,
+            trace.labels.source_pod_label,
+            trace.labels.source_namespace_label,
+            trace.labels.source_port_label,
+            trace.labels.destination_pod_label,
+            trace.labels.destination_namespace_label,
+            trace.labels.destination_port_label,
+            trace.labels.ack_flag,
+            trace.labels.psh_flag
+        ])
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        zip_file.writestr("traces.csv", csv_data.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=traces.zip"
+    response.headers["Content-Type"] = "application/zip"
+    return zip_buffer.getvalue()
 
 @app.post("/predict", response_model=Number)
 async def predict(trace: Trace):
