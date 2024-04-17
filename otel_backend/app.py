@@ -61,7 +61,6 @@ async def receive_logs(request: Request) -> LogsResponse:
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/traces.csv")
-@app.get("/traces.csv")
 async def get_traces_csv(response: Response):
     # Create a CSV string
     csv_data = io.StringIO()
@@ -72,15 +71,15 @@ async def get_traces_csv(response: Response):
                          'ack_flag', 'psh_flag'])
     for trace in TRACES:
         csv_writer.writerow([
-            trace.ip_source.encode('utf-8'),
-            trace.ip_destination.encode('utf-8'),
+            trace.ip_source,
+            trace.ip_destination,
             trace.is_anomaly,
-            trace.labels.source_pod_label.encode('utf-8'),
-            trace.labels.source_namespace_label.encode('utf-8'),
-            trace.labels.source_port_label.encode('utf-8'),
-            trace.labels.destination_pod_label.encode('utf-8'),
-            trace.labels.destination_namespace_label.encode('utf-8'),
-            trace.labels.destination_port_label.encode('utf-8'),
+            trace.labels.source_pod_label,
+            trace.labels.source_namespace_label,
+            trace.labels.source_port_label,
+            trace.labels.destination_pod_label,
+            trace.labels.destination_namespace_label,
+            trace.labels.destination_port_label,
             trace.labels.ack_flag,
             trace.labels.psh_flag
         ])
