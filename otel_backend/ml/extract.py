@@ -34,6 +34,7 @@ async def extract_data(trace) -> List[Trace]:
         try:
             for scopeSpan in item["scopeSpans"]:
                 for span in scopeSpan["spans"]:
+                    logger.info(f"Span: {span}")
                     for attribute in span["attributes"]:
                         if attribute["key"] == "cilium.flow_event.IP.source":
                             trace_instance.ip_source = attribute["value"]["stringValue"]
