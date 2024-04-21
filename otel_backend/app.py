@@ -61,7 +61,7 @@ async def receive_logs(request: Request) -> LogsResponse:
 @app.get("/traces.csv")
 async def get_traces_csv(response: Response):
     try:
-        csv = get_csv(response, TRACES)
+        csv = await get_csv(response, TRACES)
     except Exception as e:
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
