@@ -60,7 +60,13 @@ async def receive_logs(request: Request) -> LogsResponse:
 
 @app.get("/traces.csv")
 async def get_traces_csv(response: Response):
-    return await get_csv(response, TRACES)
+    try:
+        csv = get_csv(response, TRACES)
+    except Exception as e:
+        logger.error(f"Error processing request: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    return Response(content=csv, media_type="application/zip")
 
 @app.post("/predict", response_model=Number)
 async def predict(trace: Trace):
