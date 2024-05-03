@@ -16,7 +16,7 @@ async def get_csv(response: Response, TRACES: List[Trace], set_header=True):
         csv_writer.writerow(['ip_source', 'ip_destination', 'is_anomaly',
                              'source_pod_label', 'source_namespace_label', 'source_port_label',
                              'destination_pod_label', 'destination_namespace_label', 'destination_port_label',
-                             'ack_flag', 'psh_flag'])
+                             'ack_flag', 'psh_flag', 'timestamp'])
         for trace in TRACES:
             csv_writer.writerow([
                 trace.ip_source,
@@ -29,7 +29,8 @@ async def get_csv(response: Response, TRACES: List[Trace], set_header=True):
                 trace.labels.destination_namespace_label,
                 trace.labels.destination_port_label,
                 trace.labels.ack_flag,
-                trace.labels.psh_flag
+                trace.labels.psh_flag,
+                trace.timestamp
             ])
 
         # Create a zip file containing the CSV
