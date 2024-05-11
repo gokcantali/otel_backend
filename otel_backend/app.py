@@ -19,10 +19,16 @@ async def process_traces(raw_data: bytes):
     try:
         traces = await deserialize_traces(raw_data)
         logger.info(f"Received Traces: {len(traces)}")
+    except Exception as e:
+        logger.error(f"Error deserializing traces: {e}")
+    try:
         extracted_traces = await extract_data(trace)
+    except Exception as e:
+        logger.error(f"Error extracting traces: {e}")
+    try:
         await save_csv(extracted_traces)
     except Exception as e:
-        logger.error(f"Error processing traces in background: {e}")
+        logger.error(f"Error saving traces: {e}")
 
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
