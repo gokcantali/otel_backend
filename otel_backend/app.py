@@ -14,7 +14,7 @@ app = FastAPI()
 
 
 async def process_traces(raw_data: bytes):
-    trace = None
+    traces = None
     extracted_traces = []
     try:
         traces = await deserialize_traces(raw_data)
@@ -22,7 +22,7 @@ async def process_traces(raw_data: bytes):
     except Exception as e:
         logger.error(f"Error deserializing traces: {e}")
     try:
-        extracted_traces = await extract_data(trace)
+        extracted_traces = await extract_data(traces)
         logger.info(f"Extracted Traces: {len(extracted_traces)}")
     except Exception as e:
         logger.error(f"Error extracting traces: {e}")
