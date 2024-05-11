@@ -17,6 +17,8 @@ COPY . .
 RUN poetry install --no-interaction --no-ansi --no-dev
 
 RUN useradd -m appuser
+RUN chown -R appuser:appuser /usr/src/app/otel_backend
+
 USER appuser
 
 EXPOSE 8000
