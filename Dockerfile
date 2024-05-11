@@ -1,7 +1,6 @@
 FROM python:3.11-slim
 
 WORKDIR /usr/src/app
-RUN mkdir -p /usr/src/app/otel_backend/data
 
 RUN apt-get update && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*
