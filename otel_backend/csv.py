@@ -1,49 +1,77 @@
-from typing import List
 import csv
 import io
+import os
 import zipfile
+from dataclasses import fields, is_dataclass
+from typing import Any, List, Type
 
 from fastapi import Response
 
 from otel_backend.ml.extract import Trace
 
 
-async def get_csv(response: Response, TRACES: List[Trace], set_header=True):
-    try:
-        # Create a CSV string
-        csv_data = io.StringIO()
-        csv_writer = csv.writer(csv_data)
-        csv_writer.writerow(['ip_source', 'ip_destination', 'is_anomaly',
-                             'source_pod_label', 'source_namespace_label', 'source_port_label',
-                             'destination_pod_label', 'destination_namespace_label', 'destination_port_label',
-                             'ack_flag', 'psh_flag', 'timestamp'])
-        for trace in TRACES:
-            csv_writer.writerow([
-                trace.ip_source,
-                trace.ip_destination,
-                trace.is_anomaly,
-                trace.labels.source_pod_label,
-                trace.labels.source_namespace_label,
-                trace.labels.source_port_label,
-                trace.labels.destination_pod_label,
-                trace.labels.destination_namespace_label,
-                trace.labels.destination_port_label,
-                trace.labels.ack_flag,
-                trace.labels.psh_flag,
-                trace.timestamp
-            ])
+def get_all_field_names(cls: Type[Any]) -> List[str]:
+    """Recursively get all field names from the dataclass and nested dataclasses."""
+    if not is_dataclass(cls):
+        raise TypeError("The input must be a dataclass type")
+    
+    field_names = []
+    for field in fields(cls):
+        if is_dataclass(field.type):
+            nested_fields = get_all_field_names(field.type)
+            field_names.extend(nested_fields)
+        else:
+            field_names.append(field.name)
+    return field_names
 
-        # Create a zip file containing the CSV
-        zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            zip_file.writestr("traces.csv", csv_data.getvalue())
+def get_all_values(obj: Any) -> List[str]:
+    """Recursively get all values from the dataclass and nested dataclasses."""
+    if not is_dataclass(obj):
+        raise TypeError("The input object must be a dataclass instance")
 
-        # Set response headers for download
-        if set_header:
-            response.headers["Content-Disposition"] = "attachment; filename=traces.zip"
-            response.headers["Content-Type"] = "application/zip"
+    values = []
+    for field in fields(obj.__class__):
+        value = getattr(obj, field.name)
+        if is_dataclass(value):
+            nested_values = get_all_values(value)
+            values.extend(nested_values)
+        else:
+            values.append(value)
+    return values
 
-        # Return the zip file as a response
-        return zip_buffer.getvalue()
-    except Exception as e:
-        return f"An error occurred: {e}\n"
+async def save_csv(TRACES: List[Trace]):
+    os.makedirs('./data', exist_ok=True)
+    file_path = './data/traces.csv'
+    file_exists = os.path.exists(file_path)
+    
+    with open(file_path, 'a', newline='') as file:
+        csv_writer = csv.writer(file)
+        if TRACES:
+            # Write headers only if the file did not exist before
+            if not file_exists:
+                headers = get_all_field_names(TRACES[0].__class__)
+                csv_writer.writerow(headers)
+            for trace in TRACES:
+                values = get_all_values(trace)
+                csv_writer.writerow(values)
+
+async def get_csv_response(set_header=True) -> Any:
+    file_path = './data/traces.csv'
+    if not os.path.exists(file_path):
+        return "File not found."
+
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        with open(file_path, 'r') as file:
+            zip_file.writestr("traces.csv", file.read())
+
+    if set_header:
+        headers = {
+            "Content-Disposition": "attachment; filename=traces.zip",
+            "Content-Type": "application/zip"
+        }
+    else:
+        headers = {}
+
+    zip_buffer.seek(0)
+    return Response(content=zip_buffer.getvalue(), headers=headers, media_type="application/zip")

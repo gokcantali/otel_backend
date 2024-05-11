@@ -1,34 +1,27 @@
-from typing import List
-
 from fastapi import FastAPI, HTTPException, Request, Response
-from torch.types import Number
 
 from otel_backend import logger
+from otel_backend.csv import get_csv_response, save_csv
 from otel_backend.deserializers import (
     deserialize_logs,
     deserialize_metrics,
     deserialize_trace,
 )
-from otel_backend.ml.extract import Trace, extract_data
-from otel_backend.ml.model import get_model
+from otel_backend.ml.extract import extract_data
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
-from otel_backend.csv import get_csv
-
-TRACES: List[Trace] = []
 
 app = FastAPI()
 
 
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request) -> TraceResponse:
-    global TRACES
     raw_data = await request.body()
     trace = None
     extracted_traces = []
     try:
         trace = await deserialize_trace(raw_data)
         extracted_traces = await extract_data(trace)
-        TRACES.extend(extracted_traces)
+        await save_csv(extracted_traces)
         return TraceResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")
@@ -61,19 +54,11 @@ async def receive_logs(request: Request) -> LogsResponse:
 @app.get("/traces.csv")
 async def get_traces_csv(response: Response):
     try:
-        csv = await get_csv(response, TRACES)
+        response = await get_csv_response()
     except Exception as e:
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-    
-    return Response(content=csv, media_type="application/zip")
-
-@app.post("/predict", response_model=Number)
-async def predict(trace: Trace):
-    model = get_model()
-    anomaly_prediction = model.predict(trace)
-    return anomaly_prediction
-
+    return response
 
 if __name__ == "__main__":
     import uvicorn
