@@ -23,6 +23,7 @@ async def process_traces(raw_data: bytes):
         logger.error(f"Error deserializing traces: {e}")
     try:
         extracted_traces = await extract_data(trace)
+        logger.info(f"Extracted Traces: {len(extracted_traces)}")
     except Exception as e:
         logger.error(f"Error extracting traces: {e}")
     try:
