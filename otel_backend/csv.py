@@ -7,7 +7,7 @@ from typing import Any, List, Type
 
 from fastapi import Response
 
-from otel_backend.ml.extract import Trace
+from otel_backend.extract import Trace
 
 
 def get_all_field_names(cls: Type[Any]) -> List[str]:

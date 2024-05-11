@@ -7,7 +7,7 @@ from otel_backend.deserializers import (
     deserialize_metrics,
     deserialize_trace,
 )
-from otel_backend.ml.extract import extract_data
+from otel_backend.extract import extract_data
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 
 app = FastAPI()

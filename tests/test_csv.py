@@ -7,7 +7,7 @@ import pytest
 from fastapi import Response
 
 from otel_backend.csv import get_csv_response, save_csv
-from otel_backend.ml.extract import Trace, TraceLabels
+from otel_backend.extract import Trace, TraceLabels
 
 
 def load_trace_data(json_data: List[dict]) -> List[Trace]:

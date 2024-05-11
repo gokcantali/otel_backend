@@ -4,7 +4,7 @@ from typing import List
 
 import pytest
 
-from otel_backend.ml.extract import Trace, extract_data
+from otel_backend.extract import Trace, extract_data
 
 
 @pytest.mark.asyncio
