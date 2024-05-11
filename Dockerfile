@@ -16,7 +16,7 @@ COPY . .
 RUN poetry install --no-interaction --no-ansi --no-dev
 
 RUN useradd -m appuser
-RUN chown -R appuser:appuser /usr/src/app/otel_backend
+RUN chown -R appuser:appuser /usr/src/app
 
 USER appuser
 
