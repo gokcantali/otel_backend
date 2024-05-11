@@ -5,7 +5,7 @@ from otel_backend.csv import get_csv_response, save_csv
 from otel_backend.deserializers import (
     deserialize_logs,
     deserialize_metrics,
-    deserialize_trace,
+    deserialize_traces,
 )
 from otel_backend.extract import extract_data
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
@@ -17,7 +17,8 @@ async def process_traces(raw_data: bytes):
     trace = None
     extracted_traces = []
     try:
-        trace = await deserialize_trace(raw_data)
+        traces = await deserialize_traces(raw_data)
+        logger.info(f"Received Traces: {len(traces)}")
         extracted_traces = await extract_data(trace)
         await save_csv(extracted_traces)
     except Exception as e:
@@ -34,7 +35,7 @@ async def receive_metrics(request: Request) -> MetricsResponse:
     try:
         raw_data = await request.body()
         metrics = await deserialize_metrics(raw_data)
-        logger.info(f"Received Metrics: {metrics}")
+        logger.info(f"Received Metrics: {len(metrics)}")
         return MetricsResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")
@@ -45,7 +46,7 @@ async def receive_logs(request: Request) -> LogsResponse:
     try:
         raw_data = await request.body()
         logs = await deserialize_logs(raw_data)
-        logger.info(f"Received Logs: {logs}")
+        logger.info(f"Received Logs: {len(logs)}")
         return LogsResponse(status="received")
     except Exception as e:
         logger.error(f"Error processing request: {e}")
