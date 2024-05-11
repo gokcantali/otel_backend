@@ -23,7 +23,6 @@ async def deserialize_trace(data: bytes) -> dict:
         logger.error(f"Error parsing trace data: {e}")
         raise
 
-
 async def deserialize_metrics(data: bytes) -> dict:
     try:
         with GzipFile(fileobj=BytesIO(data), mode="rb") as f:
@@ -37,7 +36,6 @@ async def deserialize_metrics(data: bytes) -> dict:
     except Exception as e:
         logger.error(f"Error parsing metrics data: {e}")
         raise
-
 
 async def deserialize_logs(data: bytes) -> dict:
     try:

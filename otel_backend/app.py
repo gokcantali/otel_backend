@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 
 from otel_backend import logger
 from otel_backend.csv import get_csv_response, save_csv
@@ -13,20 +13,21 @@ from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 app = FastAPI()
 
 
-@app.post("/v1/traces", response_model=TraceResponse)
-async def receive_traces(request: Request) -> TraceResponse:
-    raw_data = await request.body()
+async def process_traces(raw_data: bytes):
     trace = None
     extracted_traces = []
     try:
         trace = await deserialize_trace(raw_data)
         extracted_traces = await extract_data(trace)
         await save_csv(extracted_traces)
-        return TraceResponse(status="received")
     except Exception as e:
-        logger.error(f"Error processing request: {e}")
-        raise HTTPException(status_code=500, detail="Error processing request")
+        logger.error(f"Error processing traces in background: {e}")
 
+@app.post("/v1/traces", response_model=TraceResponse)
+async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
+    raw_data = await request.body()
+    background_tasks.add_task(process_traces, raw_data)
+    return TraceResponse(status="received")
 
 @app.post("/v1/metrics", response_model=MetricsResponse)
 async def receive_metrics(request: Request) -> MetricsResponse:
@@ -39,7 +40,6 @@ async def receive_metrics(request: Request) -> MetricsResponse:
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @app.post("/v1/logs", response_model=LogsResponse)
 async def receive_logs(request: Request) -> LogsResponse:
     try:
@@ -51,7 +51,7 @@ async def receive_logs(request: Request) -> LogsResponse:
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/traces.csv")
+@app.get("/traces.zip")
 async def get_traces_csv(response: Response):
     try:
         response = await get_csv_response()
