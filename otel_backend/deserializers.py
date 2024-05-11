@@ -9,7 +9,7 @@ from opentelemetry.proto.collector.trace.v1 import trace_service_pb2
 from otel_backend import logger
 
 
-async def deserialize_trace(data: bytes) -> dict:
+async def deserialize_traces(data: bytes) -> dict:
     try:
         with GzipFile(fileobj=BytesIO(data), mode="rb") as f:
             decompressed_data = f.read()
@@ -22,7 +22,6 @@ async def deserialize_trace(data: bytes) -> dict:
     except Exception as e:
         logger.error(f"Error parsing trace data: {e}")
         raise
-
 
 async def deserialize_metrics(data: bytes) -> dict:
     try:
@@ -37,7 +36,6 @@ async def deserialize_metrics(data: bytes) -> dict:
     except Exception as e:
         logger.error(f"Error parsing metrics data: {e}")
         raise
-
 
 async def deserialize_logs(data: bytes) -> dict:
     try:
