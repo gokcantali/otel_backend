@@ -10,14 +10,18 @@ from otel_backend.deserializers import (
 from otel_backend.extract import extract_data
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 
+LAST_TRACE = []
+
 app = FastAPI()
 
 
 async def process_traces(raw_data: bytes):
+    global LAST_TRACE
     traces = None
     extracted_traces = []
     try:
         traces = await deserialize_traces(raw_data)
+        LAST_TRACE = traces
         extracted_traces = await extract_data(traces)
         await save_csv(extracted_traces)
     except Exception as e:
@@ -59,6 +63,11 @@ async def get_traces_csv(response: Response):
         logger.error(f"Error processing request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
     return response
+
+@app.get("/trace-example")
+async def get_last_trace():
+    global LAST_TRACE
+    return LAST_TRACE
 
 if __name__ == "__main__":
     import uvicorn
