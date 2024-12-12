@@ -1,4 +1,6 @@
-FROM --platform=linux/amd64 python:3.11-slim
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /usr/src/app
 
@@ -11,9 +13,11 @@ ENV PATH="${PATH}:/root/.local/bin"
 
 RUN poetry config virtualenvs.create false
 
-COPY . .
+COPY poetry.lock pyproject.toml ./
 
 RUN poetry install --no-interaction --no-ansi --no-dev
+
+COPY . .
 
 RUN useradd -m appuser
 RUN chown -R appuser:appuser /usr/src/app

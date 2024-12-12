@@ -1,5 +1,6 @@
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
 
+from inference.gcn import predict_trace_class
 from otel_backend import logger
 from otel_backend.csv import get_csv_response, save_csv
 from otel_backend.deserializers import (
@@ -19,14 +20,16 @@ async def process_traces(raw_data: bytes):
     global LAST_TRACE
     traces = None
     extracted_traces = []
+    # traces_to_be_predicted = []
     try:
+        logger.info("Received Traces")
         traces = await deserialize_traces(raw_data)
         LAST_TRACE = traces
         extracted_traces = await extract_data(traces)
         await save_csv(extracted_traces)
-        if len(LAST_TRACE) > 5:
-            print("will process traces now!")
-            # NOTE: add logic for online inference
+        # traces_to_be_predicted.extend(extracted_traces)
+        # if len(traces_to_be_predicted) >= 100:
+        #     predict_trace_class(traces_to_be_predicted)
     except Exception as e:
         logger.error(f"Error processing traces: {e}")
 

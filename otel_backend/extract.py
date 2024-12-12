@@ -23,6 +23,7 @@ class Trace:
     is_anomaly: bool = False
     labels: TraceLabels = field(default_factory=TraceLabels)
     timestamp: str = ""
+    anomaly_class: str = "0"
 
 
 async def extract_data(trace) -> List[Trace]:
@@ -57,6 +58,8 @@ async def extract_data(trace) -> List[Trace]:
                             trace_instance.labels.destination_pod_label = value["stringValue"]
                         elif key == "cilium.flow_event.source.labels.is_anomaly":
                             trace_instance.is_anomaly = value["stringValue"] == "true"
+                        elif key == "cilium.flow_event.source.labels.anomaly_class":
+                            trace_instance.anomaly_class = value["stringValue"]
                         elif key == "cilium.flow_event.time":
                             trace_instance.timestamp = value["stringValue"]
                     extracted_info.append(trace_instance)

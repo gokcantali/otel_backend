@@ -43,17 +43,21 @@ async def save_csv(TRACES: List[Trace]):
     os.makedirs('./data', exist_ok=True)
     file_path = './data/traces.csv'
     file_exists = os.path.exists(file_path)
-    
+
+    new_traces = []
     with open(file_path, 'a', newline='') as file:
         csv_writer = csv.writer(file)
         if TRACES:
-            # Write headers only if the file did not exist before
+            headers = get_all_field_names(TRACES[0].__class__)
             if not file_exists:
-                headers = get_all_field_names(TRACES[0].__class__)
+                # Write headers only if the file did not exist before
                 csv_writer.writerow(headers)
             for trace in TRACES:
                 values = get_all_values(trace)
                 csv_writer.writerow(values)
+                new_traces.append(dict(zip(headers, values)))
+
+    return new_traces
 
 async def get_csv_response(set_header=True) -> Any:
     file_path = './data/traces.csv'

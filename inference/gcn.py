@@ -1,7 +1,5 @@
 import json
-import time
 from collections import OrderedDict
-from lib2to3.pytree import convert
 from pathlib import Path
 from typing import List
 
@@ -17,9 +15,17 @@ from torch_geometric.nn import GCNConv
 from inference.preprocesser import preprocess_df, convert_to_graph
 
 
+OPTIMIZER_STR_TO_OPTIMIZER = {
+    "Adam": torch.optim.Adam,
+    "AdamW": torch.optim.AdamW,
+    "SGD": torch.optim.SGD,
+    "LBFGS": torch.optim.LBFGS,
+}
+
+
 class GCN(torch.nn.Module):
     def __init__(
-        self, optimizer, num_features, num_classes, weight_decay=1e-3, dropout=0.7,
+        self, optimizer_str, num_features, num_classes, weight_decay=1e-3, dropout=0.7,
         hidden_dim=16, epochs=30, lr=0.005, patience=3
     ):
         super(GCN, self).__init__()
@@ -29,6 +35,8 @@ class GCN(torch.nn.Module):
         self.conv2 = GCNConv(hidden_dim, hidden_dim)
         self.conv3 = GCNConv(hidden_dim, num_classes)
         self.dropout = nn.Dropout(p=dropout)
+
+        optimizer = OPTIMIZER_STR_TO_OPTIMIZER.get(optimizer_str, torch.optim.Adam)
         self.optimizer = optimizer(self.parameters(), lr=lr, weight_decay=weight_decay)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode="min", factor=0.1, patience=self.patience, verbose=True
@@ -89,13 +97,17 @@ def load_gcn_model_from_conf_file(conf_file_path: Path):
     return gcn
 
 
-def predict_trace_class(traces):
+def predict_trace_class(traces, gcn_conf_path="./gcn_conf.json"):
     # open result file for logging predictions
     result_file = open("results.txt", "a")
 
-    gcn = load_gcn_model_from_conf_file(Path("gcn_conf.json"))
+    gcn = load_gcn_model_from_conf_file(Path(gcn_conf_path))
     if gcn is None:
         result_file.write("No GCN model to be loaded!\n")
+        return
+
+    if len(traces) == 0:
+        result_file.write("No traces to be predicted!\n")
         return
 
     # create DataFrame from traces

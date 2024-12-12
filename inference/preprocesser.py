@@ -40,7 +40,7 @@ def construct_port_scan_label(df, use_diversity_index=True):
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
     df.sort_values(by=["timestamp"], inplace=True)
     if use_diversity_index:
-        num_chunks = mp.cpu_count()
+        num_chunks = min([mp.cpu_count(), len(df)])
         chunks = split_dataframe(df, num_chunks)
         time_window = "10s"
         with mp.Pool(processes=num_chunks) as pool:
