@@ -15,7 +15,8 @@ RUN poetry config virtualenvs.create false
 
 COPY poetry.lock pyproject.toml ./
 
-RUN poetry install --no-interaction --no-ansi --no-dev
+RUN --mount=type=cache,target=/root/.cache \
+    poetry install --no-interaction --no-ansi --without dev
 
 COPY . .
 
