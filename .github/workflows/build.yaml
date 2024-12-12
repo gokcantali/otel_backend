@@ -21,5 +21,5 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        docker build -t ghcr.io/${{ github.repository_owner }}/otel_backend:latest .
+        docker build -t ghcr.io/${{ github.repository_owner }}/otel_backend:latest --platform linux/amd64 .
         docker push ghcr.io/${{ github.repository_owner }}/otel_backend:latest
