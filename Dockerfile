@@ -1,9 +1,9 @@
-FROM python:3.11-slim
+FROM --platform=linux/amd64 python:3.11-slim
 
 WORKDIR /usr/src/app
 
 RUN apt-get update && apt-get install -y curl \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && apt-get autoclean && apt-get autoremove
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 

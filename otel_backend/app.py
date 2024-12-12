@@ -24,6 +24,9 @@ async def process_traces(raw_data: bytes):
         LAST_TRACE = traces
         extracted_traces = await extract_data(traces)
         await save_csv(extracted_traces)
+        if len(LAST_TRACE) > 5:
+            print("will process traces now!")
+            # NOTE: add logic for online inference
     except Exception as e:
         logger.error(f"Error processing traces: {e}")
 
