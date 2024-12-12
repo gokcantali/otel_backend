@@ -30,7 +30,7 @@ async def process_traces(raw_data: bytes):
         await save_csv(extracted_traces)
         traces_to_be_predicted.extend(extracted_traces)
         if len(traces_to_be_predicted) >= 100:
-            await run_in_threadpool(lambda: predict_trace_class(traces_to_be_predicted))
+            run_in_threadpool(lambda: predict_trace_class(traces_to_be_predicted))
             traces_to_be_predicted = []
     except Exception as e:
         logger.error(f"Error processing traces: {e}")
@@ -80,4 +80,4 @@ async def get_last_trace():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000, workers=4)

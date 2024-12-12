@@ -128,3 +128,4 @@ def predict_trace_class(traces, gcn_conf_path="./gcn_conf.json"):
 
     result_file.write("------Prediction ends------\n")
     result_file.close()
+    traces = []
