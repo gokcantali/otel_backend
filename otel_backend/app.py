@@ -18,7 +18,7 @@ TRACES_FOR_INFERENCE = []
 app = FastAPI()
 
 
-async def process_traces(raw_data: bytes):
+def process_traces(raw_data: bytes):
     global LAST_TRACE
     global TRACES_FOR_INFERENCE
 
@@ -26,10 +26,10 @@ async def process_traces(raw_data: bytes):
     extracted_traces = []
     try:
         logger.info("Received Traces")
-        traces = await deserialize_traces(raw_data)
+        traces = deserialize_traces(raw_data)
         LAST_TRACE = traces
-        extracted_traces = await extract_data(traces)
-        await save_csv(extracted_traces)
+        extracted_traces = extract_data(traces)
+        save_csv(extracted_traces)
         TRACES_FOR_INFERENCE.extend(extracted_traces)
         if len(TRACES_FOR_INFERENCE) >= 100:
             logger.info("Time for Inference")
@@ -42,7 +42,7 @@ async def process_traces(raw_data: bytes):
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
     raw_data = await request.body()
-    await run_in_threadpool(lambda: process_traces(raw_data))
+    background_tasks.add_task(process_traces, raw_data)
     logger.info("About to return")
     return TraceResponse(status="received")
 

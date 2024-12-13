@@ -17,7 +17,7 @@ async def test_unpacked_data_can_be_extracted():
 
     extracted_traces: List[Trace] = []
     for trace in data:
-        extracted_trace = await extract_data(trace)
+        extracted_trace = extract_data(trace)
         extracted_traces.extend(extracted_trace)
 
     assert len(extracted_traces) == 2048

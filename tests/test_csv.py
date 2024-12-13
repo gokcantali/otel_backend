@@ -57,7 +57,7 @@ async def test_save_csv():
         }
     ]
     traces = load_trace_data(json_data)
-    await save_csv(traces)
+    save_csv(traces)
 
     file_path = './data/traces.csv'
     assert os.path.exists(file_path), "CSV file was not created."
@@ -87,7 +87,7 @@ async def test_save_csv():
         }
     ]
     traces_append = load_trace_data(json_data_append)
-    await save_csv(traces_append)
+    save_csv(traces_append)
 
     with open(file_path, 'r') as f:
         content = f.read()
@@ -117,7 +117,7 @@ async def test_get_csv():
         }
     ]
     traces = load_trace_data(json_data)
-    await save_csv(traces)
+    save_csv(traces)
 
     response = Response()
     response = await get_csv_response(set_header=True)

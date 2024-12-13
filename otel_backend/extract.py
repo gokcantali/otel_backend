@@ -26,7 +26,7 @@ class Trace:
     anomaly_class: str = "0"
 
 
-async def extract_data(trace) -> List[Trace]:
+def extract_data(trace) -> List[Trace]:
     data = trace.get("resourceSpans", [])
     extracted_info: List[Trace] = []
     for item in data:
