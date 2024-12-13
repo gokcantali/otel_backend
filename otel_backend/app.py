@@ -13,32 +13,37 @@ from otel_backend.extract import extract_data
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 
 LAST_TRACE = []
+TRACES_FOR_INFERENCE = []
 
 app = FastAPI()
 
 
 async def process_traces(raw_data: bytes):
     global LAST_TRACE
+    global TRACES_FOR_INFERENCE
+
     traces = None
     extracted_traces = []
-    traces_to_be_predicted = []
     try:
         logger.info("Received Traces")
         traces = await deserialize_traces(raw_data)
         LAST_TRACE = traces
         extracted_traces = await extract_data(traces)
         await save_csv(extracted_traces)
-        traces_to_be_predicted.extend(extracted_traces)
-        if len(traces_to_be_predicted) >= 100:
-            run_in_threadpool(lambda: predict_trace_class(traces_to_be_predicted))
-            traces_to_be_predicted = []
+        TRACES_FOR_INFERENCE.extend(extracted_traces)
+        if len(TRACES_FOR_INFERENCE) >= 100:
+            logger.info("Time for Inference")
+            logger.info(f"Trace Length: {len(TRACES_FOR_INFERENCE)}")
+            predict_trace_class(TRACES_FOR_INFERENCE)
+            TRACES_FOR_INFERENCE = []
     except Exception as e:
         logger.error(f"Error processing traces: {e}")
 
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
     raw_data = await request.body()
-    background_tasks.add_task(process_traces, raw_data)
+    await run_in_threadpool(lambda: process_traces(raw_data))
+    logger.info("About to return")
     return TraceResponse(status="received")
 
 @app.post("/v1/metrics", response_model=MetricsResponse)
