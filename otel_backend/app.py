@@ -27,17 +27,25 @@ def process_traces(raw_data: bytes):
         LAST_TRACE = traces
         extracted_traces = extract_data(traces)
         save_csv(extracted_traces)
-        if len(extracted_traces) >= 100:
-            logger.info("Time for Inference")
-            logger.info(f"Trace Length: {len(extracted_traces)}")
-            predict_trace_class(extracted_traces[:100])
+        # if len(extracted_traces) >= 100:
+        #     logger.info("Time for Inference")
+        #     logger.info(f"Trace Length: {len(extracted_traces)}")
+        #     predict_trace_class(extracted_traces[:100])
     except Exception as e:
         logger.error(f"Error processing traces: {e}")
 
-@app.post("/v1/traces", response_model=TraceResponse)
-async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
+@app.get("/v1/infer", response_model=TraceResponse)
+async def infer_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
+    global LAST_TRACE
     raw_data = await request.body()
     background_tasks.add_task(process_traces, raw_data)
+    logger.info("Start inferring...")
+    extracted_traces = extract_data(LAST_TRACE)
+    predict_trace_class(extracted_traces[:100])
+    return TraceResponse(status="received")
+
+@app.post("/v1/traces", response_model=TraceResponse)
+async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
     logger.info("About to return")
     return TraceResponse(status="received")
 
