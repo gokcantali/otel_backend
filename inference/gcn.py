@@ -100,32 +100,36 @@ def load_gcn_model_from_conf_file(conf_file_path: Path):
 def predict_trace_class(traces, gcn_conf_path="./gcn_conf.json"):
     # open result file for logging predictions
     result_file = open("results.txt", "a")
+    try:
+        gcn = load_gcn_model_from_conf_file(Path(gcn_conf_path))
+        if gcn is None:
+            result_file.write("No GCN model to be loaded!\n")
+            return
 
-    gcn = load_gcn_model_from_conf_file(Path(gcn_conf_path))
-    if gcn is None:
-        result_file.write("No GCN model to be loaded!\n")
+        if len(traces) == 0:
+            result_file.write("No traces to be predicted!\n")
+            return
+
+        # create DataFrame from traces
+        traces_df = pd.DataFrame(traces)
+        X, y = preprocess_df(traces_df, use_diversity_index=True)
+
+        # construct graph data from DataFrame
+        data = convert_to_graph(X, y)
+        data.x[:, 18] = torch.zeros_like(data.x[:, 18])
+        data.x[:, 19] = torch.zeros_like(data.x[:, 19])
+
+        # predict trace class
+        result_file.write("------Prediction starts-----\n")
+
+        pred = gcn.test_model(data)
+        for i in range(len(traces)):
+            result_file.write(f"Trace {i} is predicted as {pred[i]}\n")
+
+        result_file.write("------Prediction ends------\n")
+        result_file.close()
+    except Exception as e:
+        result_file.write(f"Error: {e}\n")
+        result_file.close()
         return
 
-    if len(traces) == 0:
-        result_file.write("No traces to be predicted!\n")
-        return
-
-    # create DataFrame from traces
-    traces_df = pd.DataFrame(traces)
-    X, y = preprocess_df(traces_df, use_diversity_index=True)
-
-    # construct graph data from DataFrame
-    data = convert_to_graph(X, y)
-    data.x[:, 18] = torch.zeros_like(data.x[:, 18])
-    data.x[:, 19] = torch.zeros_like(data.x[:, 19])
-
-    # predict trace class
-    result_file.write("------Prediction starts-----\n")
-
-    pred = gcn.test_model(data)
-    for i in range(len(traces)):
-        result_file.write(f"Trace {i} is predicted as {pred[i]}\n")
-
-    result_file.write("------Prediction ends------\n")
-    result_file.close()
-    traces = []

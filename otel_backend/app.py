@@ -37,8 +37,8 @@ async def infer_traces(request: Request, background_tasks: BackgroundTasks) -> T
     global LAST_TRACE
     logger.info("Start inferring...")
     extracted_traces = extract_data(LAST_TRACE)
-    predict_trace_class(extracted_traces[:100])
-    return TraceResponse(status="received")
+    background_tasks.add_task(predict_trace_class, extracted_traces[:100])
+    return TraceResponse(status="received inference request")
 
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
