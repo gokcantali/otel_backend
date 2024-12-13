@@ -112,6 +112,8 @@ def predict_trace_class(traces, gcn_conf_path="./gcn_conf.json"):
 
         # create DataFrame from traces
         traces_df = pd.DataFrame(traces)
+        traces_df.to_csv("traces_df_output.csv", index=False)
+
         X, y = preprocess_df(traces_df, use_diversity_index=True)
 
         # construct graph data from DataFrame
