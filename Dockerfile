@@ -27,4 +27,4 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["uvicorn", "otel_backend.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "otel_backend.app:app", "--host", "0.0.0.0", "--port", "8000"]
