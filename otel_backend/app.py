@@ -11,7 +11,7 @@ from otel_backend.deserializers import (
 from otel_backend.extract import extract_data
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 
-LAST_TRACE = []
+LAST_TRACE = {}
 
 app = FastAPI()
 
@@ -19,11 +19,9 @@ app = FastAPI()
 def process_traces(raw_data: bytes):
     global LAST_TRACE
 
-    traces = None
-    extracted_traces = []
     try:
         logger.info("Received Traces")
-        traces = deserialize_traces(raw_data)
+        traces: dict = deserialize_traces(raw_data)
         LAST_TRACE = traces
         extracted_traces = extract_data(traces)
         save_csv(extracted_traces)
@@ -37,8 +35,6 @@ def process_traces(raw_data: bytes):
 @app.get("/v1/infer", response_model=TraceResponse)
 async def infer_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
     global LAST_TRACE
-    raw_data = await request.body()
-    background_tasks.add_task(process_traces, raw_data)
     logger.info("Start inferring...")
     extracted_traces = extract_data(LAST_TRACE)
     predict_trace_class(extracted_traces[:100])
@@ -46,7 +42,8 @@ async def infer_traces(request: Request, background_tasks: BackgroundTasks) -> T
 
 @app.post("/v1/traces", response_model=TraceResponse)
 async def receive_traces(request: Request, background_tasks: BackgroundTasks) -> TraceResponse:
-    logger.info("About to return")
+    raw_data = await request.body()
+    background_tasks.add_task(process_traces, raw_data)
     return TraceResponse(status="received")
 
 @app.post("/v1/metrics", response_model=MetricsResponse)
