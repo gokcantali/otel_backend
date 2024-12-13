@@ -1,5 +1,4 @@
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Response
-from fastapi.concurrency import run_in_threadpool
 
 from inference.gcn import predict_trace_class
 from otel_backend import logger
@@ -13,14 +12,12 @@ from otel_backend.extract import extract_data
 from otel_backend.models import LogsResponse, MetricsResponse, TraceResponse
 
 LAST_TRACE = []
-TRACES_FOR_INFERENCE = []
 
 app = FastAPI()
 
 
 def process_traces(raw_data: bytes):
     global LAST_TRACE
-    global TRACES_FOR_INFERENCE
 
     traces = None
     extracted_traces = []
@@ -30,12 +27,10 @@ def process_traces(raw_data: bytes):
         LAST_TRACE = traces
         extracted_traces = extract_data(traces)
         save_csv(extracted_traces)
-        TRACES_FOR_INFERENCE.extend(extracted_traces)
-        if len(TRACES_FOR_INFERENCE) >= 100:
+        if len(extracted_traces) >= 100:
             logger.info("Time for Inference")
-            logger.info(f"Trace Length: {len(TRACES_FOR_INFERENCE)}")
-            predict_trace_class(TRACES_FOR_INFERENCE)
-            TRACES_FOR_INFERENCE = []
+            logger.info(f"Trace Length: {len(extracted_traces)}")
+            predict_trace_class(extracted_traces[:100])
     except Exception as e:
         logger.error(f"Error processing traces: {e}")
 
