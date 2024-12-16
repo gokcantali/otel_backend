@@ -1,7 +1,9 @@
 import json
+import traceback
 from collections import OrderedDict
 from pathlib import Path
 from typing import List
+from io import StringIO
 
 import numpy as np
 import pandas as pd
@@ -92,7 +94,7 @@ def load_gcn_model_from_conf_file(conf_file_path: Path):
 
     pd_file_path = conf.pop("pd_file_path") # GCN pt file path
     gcn = GCN(**conf)  # initialize GCN class instance
-    gcn.load_state_dict(torch.load(pd_file_path)) # load model parameters from pt file
+    gcn.load_state_dict(torch.load(pd_file_path, weights_only=False)) # load model parameters from pt file
 
     return gcn
 
@@ -112,9 +114,10 @@ def predict_trace_class(traces, gcn_conf_path="./gcn_conf.json"):
 
         # create DataFrame from traces
         traces_df = pd.DataFrame(traces)
-        traces_df.to_csv("traces_df_output.csv", index=False)
+        df = pd.read_csv(StringIO(traces_df.to_csv(index=False)))
+        # traces_df.to_csv("traces_df_output.csv", index=False)
 
-        X, y = preprocess_df(traces_df, use_diversity_index=True)
+        X, y = preprocess_df(df, use_diversity_index=True)
 
         # construct graph data from DataFrame
         data = convert_to_graph(X, y)
@@ -125,13 +128,12 @@ def predict_trace_class(traces, gcn_conf_path="./gcn_conf.json"):
         result_file.write("------Prediction starts-----\n")
 
         pred = gcn.test_model(data)
-        for i in range(len(traces)):
-            result_file.write(f"Trace {i} is predicted as {pred[i]}\n")
+        for i in range(y.size):
+            result_file.write(f"Trace {i} - Prediction: {pred[i]}  Actual: {y[i]}\n")
 
         result_file.write("------Prediction ends------\n")
         result_file.close()
-    except Exception as e:
-        result_file.write(f"Error: {e}\n")
+    except Exception as _:
+        result_file.write(f"Error: {traceback.format_exc()}\n")
         result_file.close()
         return
-
