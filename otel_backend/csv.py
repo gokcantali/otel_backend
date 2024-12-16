@@ -39,9 +39,9 @@ def get_all_values(obj: Any) -> List[str]:
             values.append(value)
     return values
 
-def save_csv(TRACES: List[Trace]):
+def save_csv(TRACES: List[Trace], file_path: str = './data/traces.csv') -> List[dict]:
     os.makedirs('./data', exist_ok=True)
-    file_path = './data/traces.csv'
+    #file_path = './data/traces.csv'
     file_exists = os.path.exists(file_path)
 
     new_traces = []

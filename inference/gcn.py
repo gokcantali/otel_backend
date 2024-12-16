@@ -113,9 +113,9 @@ def predict_trace_class(traces, gcn_conf_path="./gcn_conf.json"):
             return
 
         # create DataFrame from traces
-        traces_df = pd.DataFrame(traces)
+        traces_df = pd.read_csv('./data/inference.csv')
         df = pd.read_csv(StringIO(traces_df.to_csv(index=False)))
-        traces_df.to_csv("traces_df_output.csv", index=False)
+        # traces_df.to_csv("traces_df_output.csv", index=False)
 
         X, y = preprocess_df(df, use_diversity_index=False)
         X["diversity_index"] = torch.zeros(len(X.index))
